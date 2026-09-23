@@ -1,15 +1,23 @@
 {
-  "contract_version": "1.0",
+  "contract_version": "1.1",
   "service_id": "climbing-record",
   "service_name": "攀岩接力纪录核准",
-  "scope": "保存速度接力原始计时、设备校准、裁判确认和纪录核准过程。",
+  "scope": "保存速度接力原始计时、设备校准、裁判确认和纪录核准过程，按发生顺序封存双通道计时器、裁判终端与设备检定信息，支撑即时成绩、正式赛果与已核准纪录三级发布。",
   "actors": [
     "计时设备",
+    "设备检定员",
     "现场裁判",
     "技术代表",
     "参赛队伍",
     "纪录审核员"
   ],
+  "rounds": [
+    {"code": "heat", "name": "预赛"},
+    {"code": "quarterfinal", "name": "四分之一决赛"},
+    {"code": "semifinal", "name": "半决赛"},
+    {"code": "final", "name": "决赛"}
+  ],
+  "channels": ["primary", "backup"],
   "states": [
     "即时成绩",
     "待核验",
@@ -17,10 +25,52 @@
     "申诉中",
     "纪录已核准"
   ],
+  "event_types": [
+    "meeting_registered",
+    "round_scheduled",
+    "team_roster_set",
+    "team_lineup_submitted",
+    "lineup_changed",
+    "calibration_registered",
+    "attempt_started",
+    "timer_reading_ingested",
+    "sensor_missing_marked",
+    "referee_confirmation",
+    "false_start_declared",
+    "false_start_revoked",
+    "rerun_granted",
+    "rerun_voided",
+    "protest_filed",
+    "protest_resolved",
+    "result_corrected",
+    "result_officialized",
+    "record_standard_issued",
+    "precision_rule_issued",
+    "record_ratified",
+    "record_rejected"
+  ],
+  "read_models": [
+    {"path": "GET /attempts/{id}/live", "name": "即时成绩", "description": "最近一次原始读数，未经核对与确认"},
+    {"path": "GET /rounds/{id}/results", "name": "正式赛果", "description": "裁判确认并正式化的轮次赛果"},
+    {"path": "GET /records", "name": "已核准纪录", "description": "技术代表签发的世界纪录，附完整证据包"}
+  ],
+  "record_checklist": [
+    "两名选手的接力顺序与提交棒次一致",
+    "每段计时完整且双通道读数核对一致（或在现行精度规则容差内）",
+    "起跑反应时间合法（不早于现行抢跑阈值）",
+    "赛道设备校准证书覆盖比赛时刻",
+    "赛后申诉期已截止且不存在未决申诉（单次申诉驳回不等于窗口期关闭）"
+  ],
   "invariants": [
-    "原始计时读数只追加不覆盖",
-    "设备校准缺失时不得核准纪录",
-    "即时成绩与正式纪录使用不同发布状态"
+    "原始计时读数只追加不覆盖，任何修改以后续更正事件保留前因后果",
+    "网络重传按摄入请求幂等键去重，同一攀爬的有效读数不得增加",
+    "同一设备通道的读数序号必须严格递增，乱序与重放一律拒收",
+    "某个传感器缺失时只能标记为待核，禁止自动补值或推断",
+    "预赛、四分之一决赛、半决赛、决赛使用各自轮次身份，尝试归属于唯一轮次",
+    "队伍换人、重赛、犯规撤销、成绩更正均产生新事件并链接被修订事件，历史不可销毁",
+    "纪录标准与精度规则按生效时间版本化，只适用于生效之后发生的尝试",
+    "设备校准缺失或过期、读数待核、裁判未确认、申诉未决时不得核准纪录",
+    "即时成绩、正式赛果、已核准纪录使用相互独立的发布状态与接口",
+    "每条已核准纪录必须可追溯到校准证书、原始分段读数、裁判确认与申诉截止状态"
   ]
 }
-
