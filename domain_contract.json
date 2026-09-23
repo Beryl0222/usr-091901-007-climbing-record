@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.0",
+  "contract_version": "1.1",
   "service_id": "climbing-record",
   "service_name": "攀岩接力纪录核准",
   "scope": "保存速度接力原始计时、设备校准、裁判确认和纪录核准过程。",
@@ -10,6 +10,30 @@
     "参赛队伍",
     "纪录审核员"
   ],
+  "rounds": [
+    {"id": "heat", "name": "预赛"},
+    {"id": "quarterfinal", "name": "四分之一决赛"},
+    {"id": "semifinal", "name": "半决赛"},
+    {"id": "final", "name": "决赛"}
+  ],
+  "reading_sources": [
+    "timer-primary",
+    "timer-backup",
+    "referee-terminal",
+    "device-inspection"
+  ],
+  "reading_types": [
+    {"code": "reaction", "name": "起跑反应", "requires_channel": false},
+    {"code": "split", "name": "分段计时", "requires_channel": true},
+    {"code": "finish", "name": "到顶完成", "requires_channel": true},
+    {"code": "start-gate", "name": "出发门", "requires_channel": true},
+    {"code": "handoff", "name": "接棒", "requires_channel": false}
+  ],
+  "read_models": [
+    {"id": "instant", "name": "即时成绩", "route": "/rounds/{round}/attempts/{attempt_id}/instant"},
+    {"id": "official", "name": "正式赛果", "route": "/rounds/{round}/races/{race_id}/result"},
+    {"id": "record", "name": "已核准纪录", "route": "/records/{record_id}"}
+  ],
   "states": [
     "即时成绩",
     "待核验",
@@ -17,10 +41,71 @@
     "申诉中",
     "纪录已核准"
   ],
+  "record_status": [
+    "eligible",
+    "pending-verification",
+    "ratified",
+    "rejected"
+  ],
+  "commands": [
+    "register-round",
+    "register-race",
+    "register-team",
+    "announce-team",
+    "register-attempt",
+    "record-reading",
+    "mark-reading-missing",
+    "register-calibration",
+    "revoke-calibration",
+    "register-rule-version",
+    "judge-confirm",
+    "file-appeal",
+    "resolve-appeal",
+    "disqualify",
+    "rescind-disqualification",
+    "order-rerun",
+    "correct-result",
+    "close-appeal-window",
+    "propose-record",
+    "ratify-record",
+    "reject-record"
+  ],
+  "audit_events": [
+    "round-registered",
+    "race-scheduled",
+    "team-registered",
+    "team-announced",
+    "attempt-registered",
+    "reading-recorded",
+    "reading-marked-missing",
+    "calibration-registered",
+    "calibration-revoked",
+    "rule-version-registered",
+    "judgement-confirmed",
+    "appeal-filed",
+    "appeal-resolved",
+    "disqualification-decided",
+    "disqualification-rescinded",
+    "rerun-ordered",
+    "result-corrected",
+    "appeal-window-closed",
+    "record-proposed",
+    "record-ratified",
+    "record-rejected"
+  ],
   "invariants": [
     "原始计时读数只追加不覆盖",
-    "设备校准缺失时不得核准纪录",
-    "即时成绩与正式纪录使用不同发布状态"
+    "封存顺序严格按读数发生时间排列，同刻按接收序号排列",
+    "同一来源同一读数标识的网络重传只封存一次，有效攀爬次数不增加",
+    "双通道计时读数必须按通道分别留痕，禁止合并为单一来源",
+    "某个传感器读数缺失时只能标记为待核，禁止自动补值或用他通道插值",
+    "设备校准缺失或证书失效时不得核准纪录",
+    "缺少裁判确认、申诉期未截止或申诉未决时不得核准纪录",
+    "两名选手的接力顺序是核准必要证据，顺序不明只能待核",
+    "预赛、四分之一决赛、半决赛、决赛使用各自轮次身份，跨轮次不得混用成绩",
+    "队伍换人、重赛、犯规判罚、犯规撤销与成绩更正必须保留前因后果，原记录不得删除",
+    "纪录标准或精度规则更新只适用于生效时间之后的尝试，不溯及既往",
+    "即时成绩、正式赛果与已核准纪录使用相互独立的发布状态与接口",
+    "从任一已核准纪录必须可追溯到校准证书、原始分段读数、裁判确认与申诉截止状态"
   ]
 }
-
